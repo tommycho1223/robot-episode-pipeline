@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: robo
+      POSTGRES_PASSWORD: robo
+      POSTGRES_DB: robodata
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U robo -d robodata"]
+      interval: 2s
+      retries: 20
+
+  minio:  # S3-compatible storage that runs locally
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports: ["9000:9000", "9001:9001"]  # 9001 = web console
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      retries: 20
+
+  pipeline:  # runs init-db, generate, ingest, validate once, then exits
+    build: .
+    command: ["python", "-m", "robodata", "run-all"]
+    environment: &env
+      DATABASE_URL: postgresql://robo:robo@postgres:5432/robodata
+      S3_ENDPOINT: http://minio:9000
+      RAW_DIR: /data/raw
+    volumes: ["./data:/data"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      minio: {condition: service_healthy}
+
+  api:
+    build: .
+    environment: *env
+    ports: ["8000:8000"]
+    depends_on:
+      pipeline: {condition: service_completed_successfully}
