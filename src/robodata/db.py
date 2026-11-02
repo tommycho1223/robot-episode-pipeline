@@ -1,4 +1,5 @@
 """Database connection and schema setup (plain SQL with psycopg 3)."""
+import os
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -7,8 +8,7 @@ from psycopg.rows import dict_row
 
 from .config import settings
 
-SCHEMA_PATH = Path(__file__).resolve().parents[2] / "sql" / "schema.sql"
-
+SCHEMA_PATH = Path(os.getenv("SCHEMA_PATH", Path(__file__).resolve().parents[2] / "sql" / "schema.sql"))
 
 @contextmanager
 def connect():

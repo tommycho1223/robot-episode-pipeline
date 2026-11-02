@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql://robo:robo@postgres:5432/robodata
       S3_ENDPOINT: http://minio:9000
       RAW_DIR: /data/raw
+      SCHEMA_PATH: /app/sql/schema.sql
     volumes: ["./data:/data"]
     depends_on:
       postgres: {condition: service_healthy}
